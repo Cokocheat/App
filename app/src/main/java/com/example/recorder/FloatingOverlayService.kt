@@ -19,6 +19,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.example.MainActivity
+import com.example.R
 import com.example.model.RecordStatus
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
@@ -171,7 +172,7 @@ class FloatingOverlayService : Service() {
                 setColor(Color.parseColor("#FF2D55")) // Crimson red
             }
             background = dotBg
-            setImageResource(android.R.drawable.ic_btn_speak_now)
+            setImageResource(R.drawable.ic_float_rec)
             setColorFilter(Color.WHITE)
             setPadding(dp(6), dp(6), dp(6), dp(6))
         }
@@ -199,7 +200,7 @@ class FloatingOverlayService : Service() {
                 layoutParams = LinearLayout.LayoutParams(dp(28), dp(28)).apply {
                     setMargins(dp(4), 0, dp(4), 0)
                 }
-                setImageResource(android.R.drawable.ic_media_pause)
+                setImageResource(R.drawable.ic_float_pause)
                 setColorFilter(Color.parseColor("#00E5FF"))
                 setOnClickListener {
                     ScreenRecordController.requestPauseResume(this@FloatingOverlayService)
@@ -212,7 +213,7 @@ class FloatingOverlayService : Service() {
                 layoutParams = LinearLayout.LayoutParams(dp(28), dp(28)).apply {
                     setMargins(dp(4), 0, dp(4), 0)
                 }
-                setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
+                setImageResource(R.drawable.ic_float_stop)
                 setColorFilter(Color.parseColor("#FF3B30"))
                 setOnClickListener {
                     val state = ScreenRecordController.state.value
@@ -234,7 +235,7 @@ class FloatingOverlayService : Service() {
                 layoutParams = LinearLayout.LayoutParams(dp(24), dp(24)).apply {
                     setMargins(dp(6), 0, dp(2), 0)
                 }
-                setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
+                setImageResource(R.drawable.ic_float_close)
                 setColorFilter(Color.parseColor("#94A3B8"))
                 setOnClickListener {
                     removeOverlayAndStop()
@@ -261,14 +262,14 @@ class FloatingOverlayService : Service() {
                     timerTextView?.text = state.formattedDuration
                     pauseIcon?.visibility = View.VISIBLE
                     pauseIcon?.setImageResource(
-                        if (state.isPaused) android.R.drawable.ic_media_play
-                        else android.R.drawable.ic_media_pause
+                        if (state.isPaused) R.drawable.ic_float_play
+                        else R.drawable.ic_float_pause
                     )
-                    recordIcon?.setImageResource(android.R.drawable.ic_delete)
+                    recordIcon?.setImageResource(R.drawable.ic_float_stop)
                 } else {
                     timerTextView?.text = "120 FPS"
                     pauseIcon?.visibility = View.GONE
-                    recordIcon?.setImageResource(android.R.drawable.ic_media_play)
+                    recordIcon?.setImageResource(R.drawable.ic_float_rec)
                 }
             }
         }

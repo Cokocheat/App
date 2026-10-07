@@ -47,6 +47,15 @@ fun MainScreen(
     val isFloatingWidgetVisible by viewModel.floatingWidgetVisible.collectAsStateWithLifecycle()
     val showOverlayPermissionDialog by viewModel.showOverlayPermissionDialog.collectAsStateWithLifecycle()
 
+    // Activity Result Launcher for Overlay Permission
+    val overlayPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { _ ->
+        if (Settings.canDrawOverlays(context)) {
+            viewModel.onOverlayPermissionGranted(context)
+        }
+    }
+
     // Activity Result Launcher for MediaProjection (Screen Recording Intent)
     val projectionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -69,20 +78,25 @@ fun MainScreen(
     }
 
     val launchRecordFlow: () -> Unit = {
-        val permissions = mutableListOf<String>()
-        if (config.audioSource != AudioSourceOption.MUTE) {
-            permissions.add(android.Manifest.permission.RECORD_AUDIO)
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permissions.add(android.Manifest.permission.POST_NOTIFICATIONS)
-        }
-
-        if (permissions.isNotEmpty()) {
-            permissionLauncher.launch(permissions.toTypedArray())
+        // Check overlay permission if floating controls are enabled
+        if (config.showFloatingControls && !Settings.canDrawOverlays(context)) {
+            viewModel.promptOverlayPermission()
         } else {
-            val mediaProjectionManager = context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as? MediaProjectionManager
-            mediaProjectionManager?.let { mgr ->
-                projectionLauncher.launch(mgr.createScreenCaptureIntent())
+            val permissions = mutableListOf<String>()
+            if (config.audioSource != AudioSourceOption.MUTE) {
+                permissions.add(android.Manifest.permission.RECORD_AUDIO)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                permissions.add(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+
+            if (permissions.isNotEmpty()) {
+                permissionLauncher.launch(permissions.toTypedArray())
+            } else {
+                val mediaProjectionManager = context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as? MediaProjectionManager
+                mediaProjectionManager?.let { mgr ->
+                    projectionLauncher.launch(mgr.createScreenCaptureIntent())
+                }
             }
         }
     }
@@ -227,28 +241,12 @@ fun MainScreen(
                 }
             }
 
-            // Draggable Floating Controls In-App Simulation (if enabled)
-            if (isFloatingWidgetVisible && !Settings.canDrawOverlays(context)) {
-                FloatingControlWidget(
-                    recordingState = recordState,
-                    onToggleRecord = {
-                        viewModel.onRecordButtonClicked(launchRecordFlow)
-                    },
-                    onPauseResume = {
-                        viewModel.togglePauseResume()
-                    },
-                    onClose = {
-                        viewModel.toggleFloatingWidget(context)
-                    }
-                )
-            }
-
             // Overlay Permission Dialog
             if (showOverlayPermissionDialog) {
                 AlertDialog(
                     onDismissRequest = { viewModel.dismissOverlayPermissionDialog() },
                     title = {
-                        Text(text = "Izin Tombol Mengambang", fontWeight = FontWeight.Bold)
+                        Text(text = "Izin Tombol Mengambang (Overlay)", fontWeight = FontWeight.Bold)
                     },
                     text = {
                         Text(
@@ -266,7 +264,7 @@ fun MainScreen(
                                         Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                                         Uri.parse("package:${context.packageName}")
                                     )
-                                    context.startActivity(intent)
+                                    overlayPermissionLauncher.launch(intent)
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = UltraCyan)

@@ -62,8 +62,43 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _showOverlayPermissionDialog = MutableStateFlow(false)
     val showOverlayPermissionDialog: StateFlow<Boolean> = _showOverlayPermissionDialog.asStateFlow()
 
+    fun promptOverlayPermission() {
+        _showOverlayPermissionDialog.value = true
+    }
+
     fun dismissOverlayPermissionDialog() {
         _showOverlayPermissionDialog.value = false
+    }
+
+    fun onOverlayPermissionGranted(context: Context) {
+        _showOverlayPermissionDialog.value = false
+        _floatingWidgetVisible.value = true
+        updateConfig(configFlow.value.copy(showFloatingControls = true))
+        FloatingOverlayService.start(context)
+    }
+
+    fun checkAndSyncFloatingOverlay(context: Context) {
+        val hasOverlay = Settings.canDrawOverlays(context)
+        val shouldShow = hasOverlay && configFlow.value.showFloatingControls
+        _floatingWidgetVisible.value = shouldShow
+        if (shouldShow) {
+            FloatingOverlayService.start(context)
+        }
+    }
+
+    fun toggleFloatingWidget(context: Context) {
+        if (!Settings.canDrawOverlays(context)) {
+            _showOverlayPermissionDialog.value = true
+            return
+        }
+        val newState = !_floatingWidgetVisible.value
+        _floatingWidgetVisible.value = newState
+        updateConfig(configFlow.value.copy(showFloatingControls = newState))
+        if (newState) {
+            FloatingOverlayService.start(context)
+        } else {
+            FloatingOverlayService.stop(context)
+        }
     }
 
     private var countdownJob: Job? = null
@@ -152,20 +187,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             else -> current
         }
         updateConfig(newConfig)
-    }
-
-    fun toggleFloatingWidget(context: Context) {
-        if (!Settings.canDrawOverlays(context)) {
-            _showOverlayPermissionDialog.value = true
-            return
-        }
-        val newState = !_floatingWidgetVisible.value
-        _floatingWidgetVisible.value = newState
-        if (newState) {
-            FloatingOverlayService.start(context)
-        } else {
-            FloatingOverlayService.stop(context)
-        }
     }
 
     fun onRecordButtonClicked(
