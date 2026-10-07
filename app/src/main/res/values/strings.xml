@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">RecStudio 120 FPS</string>
+    <string name="title_recorder">Perekam Layar</string>
+    <string name="title_recordings">Galeri Rekaman</string>
+    <string name="title_settings">Pengaturan</string>
+    <string name="status_ready">Siap Merekam</string>
+    <string name="status_recording">Sedang Merekam Layar</string>
+    <string name="status_paused">Rekaman Dijeda</string>
+    <string name="btn_start_record">Mulai Rekam</string>
+    <string name="btn_stop_record">Hentikan Rekam</string>
+    <string name="btn_pause">Jeda</string>
+    <string name="btn_resume">Lanjut</string>
+    <string name="fps_120_badge">120 FPS ULTRA</string>
+    <string name="settings_video_title">Pengaturan Video</string>
+    <string name="settings_audio_title">Pengaturan Audio</string>
+    <string name="settings_controls_title">Kontrol &amp; Fitur Pintar</string>
+    <string name="settings_storage_title">Penyimpanan</string>
+</resources>
+

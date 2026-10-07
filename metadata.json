@@ -1,0 +1,7 @@
+{
+  "name": "RecStudio 120 FPS",
+  "description": "Aplikasi perekam layar modern dengan kontrol penuh, pengaturan resolusi hingga 4K, bitrate tinggi, dan dukungan 120 FPS ultra-smooth.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
