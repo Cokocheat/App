@@ -44,17 +44,21 @@ fun StudioScreen(
 ) {
     val scrollState = rememberScrollState()
 
-    // Pulsing animation for record button and active recording ring
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse_recorder")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1.0f,
-        targetValue = if (recordingState.isRecording) 1.15f else 1.05f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(if (recordingState.isRecording) 600 else 1400, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse_scale"
-    )
+    // Optimized: Only animate pulse scale during active recording to keep UI smooth and battery light
+    val pulseScale = if (recordingState.isRecording) {
+        val infiniteTransition = rememberInfiniteTransition(label = "pulse_recorder")
+        infiniteTransition.animateFloat(
+            initialValue = 1.0f,
+            targetValue = 1.15f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(600, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "pulse_scale"
+        ).value
+    } else {
+        1.0f
+    }
 
     Column(
         modifier = modifier

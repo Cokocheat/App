@@ -234,6 +234,9 @@ class ScreenRecordService : Service() {
             startTicker()
             setupShakeDetector()
             setupScreenOffReceiver()
+            if (currentConfig.showFloatingControls && android.provider.Settings.canDrawOverlays(this)) {
+                FloatingOverlayService.start(this)
+            }
             vibrateDevice(50)
 
         } catch (e: Exception) {

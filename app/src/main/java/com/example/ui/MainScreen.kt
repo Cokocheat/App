@@ -4,7 +4,9 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.media.projection.MediaProjectionManager
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
@@ -43,6 +45,7 @@ fun MainScreen(
     val videos by viewModel.videosFlow.collectAsStateWithLifecycle()
     val selectedVideo by viewModel.selectedVideoForPlayback.collectAsStateWithLifecycle()
     val isFloatingWidgetVisible by viewModel.floatingWidgetVisible.collectAsStateWithLifecycle()
+    val showOverlayPermissionDialog by viewModel.showOverlayPermissionDialog.collectAsStateWithLifecycle()
 
     // Activity Result Launcher for MediaProjection (Screen Recording Intent)
     val projectionLauncher = rememberLauncherForActivityResult(
@@ -199,7 +202,7 @@ fun MainScreen(
                             },
                             onConfigUpdate = { viewModel.updateConfig(it) },
                             onApplyPreset = { viewModel.applyPreset(it) },
-                            onToggleFloatingWidget = { viewModel.toggleFloatingWidget() },
+                            onToggleFloatingWidget = { viewModel.toggleFloatingWidget(context) },
                             isFloatingWidgetVisible = isFloatingWidgetVisible
                         )
                     }
@@ -224,8 +227,8 @@ fun MainScreen(
                 }
             }
 
-            // Draggable Floating Controls Simulator (if enabled)
-            if (isFloatingWidgetVisible) {
+            // Draggable Floating Controls In-App Simulation (if enabled)
+            if (isFloatingWidgetVisible && !Settings.canDrawOverlays(context)) {
                 FloatingControlWidget(
                     recordingState = recordState,
                     onToggleRecord = {
@@ -235,8 +238,48 @@ fun MainScreen(
                         viewModel.togglePauseResume()
                     },
                     onClose = {
-                        viewModel.toggleFloatingWidget()
+                        viewModel.toggleFloatingWidget(context)
                     }
+                )
+            }
+
+            // Overlay Permission Dialog
+            if (showOverlayPermissionDialog) {
+                AlertDialog(
+                    onDismissRequest = { viewModel.dismissOverlayPermissionDialog() },
+                    title = {
+                        Text(text = "Izin Tombol Mengambang", fontWeight = FontWeight.Bold)
+                    },
+                    text = {
+                        Text(
+                            text = "Agar tombol perekam tetap mengambang di layar saat Anda membuka game, TikTok, YouTube, atau layar utama HP, mohon aktifkan izin 'Tampilkan di atas aplikasi lain' (Appear on top) di Pengaturan.",
+                            fontSize = 13.sp,
+                            lineHeight = 18.sp
+                        )
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                viewModel.dismissOverlayPermissionDialog()
+                                runCatching {
+                                    val intent = Intent(
+                                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                        Uri.parse("package:${context.packageName}")
+                                    )
+                                    context.startActivity(intent)
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = UltraCyan)
+                        ) {
+                            Text("Buka Pengaturan", color = androidx.compose.ui.graphics.Color.Black, fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { viewModel.dismissOverlayPermissionDialog() }) {
+                            Text("Nanti Saja")
+                        }
+                    },
+                    containerColor = StudioSurfaceVariant
                 )
             }
 

@@ -14,8 +14,10 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.SettingsRepository
 import com.example.data.VideoRepository
 import com.example.model.*
+import com.example.recorder.FloatingOverlayService
 import com.example.recorder.ScreenRecordController
 import com.example.recorder.ScreenRecordService
+import android.provider.Settings
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -56,6 +58,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _floatingWidgetVisible = MutableStateFlow(false)
     val floatingWidgetVisible: StateFlow<Boolean> = _floatingWidgetVisible.asStateFlow()
+
+    private val _showOverlayPermissionDialog = MutableStateFlow(false)
+    val showOverlayPermissionDialog: StateFlow<Boolean> = _showOverlayPermissionDialog.asStateFlow()
+
+    fun dismissOverlayPermissionDialog() {
+        _showOverlayPermissionDialog.value = false
+    }
 
     private var countdownJob: Job? = null
 
@@ -145,8 +154,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         updateConfig(newConfig)
     }
 
-    fun toggleFloatingWidget() {
-        _floatingWidgetVisible.value = !_floatingWidgetVisible.value
+    fun toggleFloatingWidget(context: Context) {
+        if (!Settings.canDrawOverlays(context)) {
+            _showOverlayPermissionDialog.value = true
+            return
+        }
+        val newState = !_floatingWidgetVisible.value
+        _floatingWidgetVisible.value = newState
+        if (newState) {
+            FloatingOverlayService.start(context)
+        } else {
+            FloatingOverlayService.stop(context)
+        }
     }
 
     fun onRecordButtonClicked(

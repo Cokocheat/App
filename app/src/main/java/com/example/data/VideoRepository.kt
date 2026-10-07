@@ -11,11 +11,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 
 class VideoRepository(private val context: Context) {
 
     private val _videos = MutableStateFlow<List<RecordedVideo>>(emptyList())
     val videos: StateFlow<List<RecordedVideo>> = _videos.asStateFlow()
+
+    // Cache to avoid slow repeated MediaMetadataRetriever reads
+    private val metadataCache = ConcurrentHashMap<String, Pair<Long, RecordedVideo>>()
 
     fun getOutputDirectory(): File {
         val moviesDir = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
@@ -34,7 +38,16 @@ class VideoRepository(private val context: Context) {
         }?.sortedByDescending { it.lastModified() } ?: emptyList()
 
         val list = files.mapNotNull { file ->
-            extractVideoMetadata(file)
+            val cached = metadataCache[file.absolutePath]
+            if (cached != null && cached.first == file.lastModified()) {
+                cached.second
+            } else {
+                val meta = extractVideoMetadata(file)
+                if (meta != null) {
+                    metadataCache[file.absolutePath] = Pair(file.lastModified(), meta)
+                }
+                meta
+            }
         }
         _videos.value = list
     }
@@ -74,6 +87,7 @@ class VideoRepository(private val context: Context) {
 
     suspend fun deleteVideo(video: RecordedVideo): Boolean = withContext(Dispatchers.IO) {
         val file = File(video.filePath)
+        metadataCache.remove(file.absolutePath)
         val deleted = if (file.exists()) file.delete() else false
         if (deleted) {
             refreshVideos()
@@ -86,6 +100,7 @@ class VideoRepository(private val context: Context) {
         val sourceFile = File(video.filePath)
         val targetFile = File(sourceFile.parentFile, "$cleanName.mp4")
         if (targetFile.exists()) return@withContext false
+        metadataCache.remove(sourceFile.absolutePath)
         val renamed = sourceFile.renameTo(targetFile)
         if (renamed) {
             refreshVideos()
